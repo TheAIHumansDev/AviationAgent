@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AeroAgent — Aviation Operations Intelligence</title>
+<style>
+  /* ============================================================
+     AEROAGENT — Full Standalone
+     HOW TO USE:
+       1. Set API_KEY in the <script> below (line ~460)
+       2. Open this file in Chrome / Firefox, OR
+          paste into CodePen HTML panel, OR
+          use display(HTML(...)) in Google Colab
+     ============================================================ */
+
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@200;300;400;600&display=swap');
+
+  :root {
+    --bg:     #050a14;
+    --bg2:    #080f1e;
+    --panel:  #0a1628;
+    --panel2: #0d1d36;
+    --border: #1a3a6a;
+    --accent: #00d4ff;
+    --accent2:#0088cc;
+    --accent3:#ff6b35;
+    --green:  #00ff88;
+    --yellow: #ffd700;
+    --red:    #ff4757;
+    --text:   #c8dff5;
+    --text2:  #7a9ec4;
+    --text3:  #3a5a8a;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(0,212,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none; z-index:0;
+  }
+
+  .container {
+    position:relative; z-index:1;
+    max-width:1400px; margin:0 auto;
+    padding:20px;
+    display:flex; flex-direction:column; gap:20px;
+    min-height:100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display:flex; align-items:center; gap:20px;
+    padding:16px 24px;
+    background: linear-gradient(135deg,rgba(10,22,40,.9),rgba(8,15,30,.95));
+    border:1px solid var(--border); border-radius:4px;
+    position:relative; overflow:hidden;
+  }
+  header::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg,transparent,var(--accent),transparent);
+    animation: scan 3s linear infinite;
+  }
+  @keyframes scan { from{transform:translateX(-100%)} to{transform:translateX(100%)} }
+
+  .logo { display:flex; align-items:center; gap:12px; }
+  .logo svg { width:44px; height:44px; }
+  .logo-text h1 {
+    font-family:'Rajdhani',sans-serif; font-size:1.8rem; font-weight:700;
+    letter-spacing:.15em;
+    background: linear-gradient(135deg,#fff,var(--accent));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .logo-text span {
+    font-family:'Share Tech Mono',monospace; font-size:.65rem;
+    color:var(--text2); letter-spacing:.2em; text-transform:uppercase;
+  }
+
+  .header-status { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .badge {
+    padding:2px 8px; border-radius:2px;
+    font-family:'Share Tech Mono',monospace; font-size:.58rem; letter-spacing:.1em;
+  }
+  .badge-green { background:rgba(0,255,136,.1); color:var(--green); border:1px solid rgba(0,255,136,.3); }
+  .status-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--green); box-shadow:0 0 8px var(--green);
+    animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
+  .status-text { font-family:'Share Tech Mono',monospace; font-size:.7rem; color:var(--green); letter-spacing:.1em; }
+
+  /* ── Layout ── */
+  .main-layout {
+    display:grid; grid-template-columns:280px 1fr; gap:20px;
+    flex:1; min-height:0;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar { display:flex; flex-direction:column; gap:16px; }
+  .section-label {
+    font-family:'Share Tech Mono',monospace; font-size:.6rem;
+    letter-spacing:.25em; color:var(--text3); text-transform:uppercase;
+    padding-bottom:8px; border-bottom:1px solid var(--border);
+  }
+  .modules-grid { display:flex; flex-direction:column; gap:6px; }
+  .module-btn {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px;
+    background:var(--panel); border:1px solid var(--border); border-radius:3px;
+    cursor:pointer; transition:all .2s; text-align:left;
+    position:relative; overflow:hidden; font-family:inherit;
+  }
+  .module-btn::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+    background:transparent; transition:background .2s;
+  }
+  .module-btn:hover,.module-btn.active { border-color:var(--accent2); background:var(--panel2); }
+  .module-btn.active::before { background:var(--accent); box-shadow:0 0 20px rgba(0,212,255,.3); }
+  .module-btn.active { border-color:var(--accent); }
+  .module-icon { font-size:1.1rem; width:24px; text-align:center; flex-shrink:0; }
+  .module-info { flex:1; min-width:0; }
+  .module-name { font-family:'Rajdhani',sans-serif; font-weight:600; font-size:.85rem; letter-spacing:.05em; color:var(--text); }
+  .module-btn.active .module-name { color:var(--accent); }
+  .module-desc { font-size:.65rem; color:var(--text3); margin-top:1px; }
+
+  .info-panel {
+    padding:14px 16px; background:var(--panel);
+    border:1px solid var(--border); border-radius:3px;
+  }
+  .info-panel .section-label { margin-bottom:10px; }
+  .flight-info { display:flex; flex-direction:column; gap:8px; }
+  .info-row { display:flex; justify-content:space-between; align-items:center; }
+  .info-key { font-family:'Share Tech Mono',monospace; font-size:.65rem; color:var(--text3); letter-spacing:.05em; }
+  .info-val { font-family:'Share Tech Mono',monospace; font-size:.7rem; color:var(--accent); }
+  .info-val.green  { color:var(--green); }
+  .info-val.yellow { color:var(--yellow); }
+
+  /* ── Chat area ── */
+  .chat-area {
+    display:flex; flex-direction:column;
+    background:var(--panel); border:1px solid var(--border); border-radius:4px;
+    overflow:hidden; min-height:600px; position:relative;
+  }
+  .chat-header {
+    padding:14px 20px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+    background:rgba(5,10,20,.5);
+  }
+  .chat-module-tag {
+    font-family:'Share Tech Mono',monospace; font-size:.65rem;
+    letter-spacing:.15em; padding:3px 10px;
+    background:rgba(0,212,255,.1); border:1px solid var(--accent2);
+    border-radius:2px; color:var(--accent);
+  }
+  .chat-title { font-family:'Rajdhani',sans-serif; font-size:.95rem; font-weight:600; letter-spacing:.05em; color:var(--text); }
+
+  .chat-messages {
+    flex:1; overflow-y:auto; padding:20px;
+    display:flex; flex-direction:column; gap:16px;
+    scroll-behavior:smooth;
+  }
+  .chat-messages::-webkit-scrollbar { width:4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .message { display:flex; gap:12px; animation:fadeSlide .3s ease-out; }
+  .message.user { flex-direction:row-reverse; }
+  @keyframes fadeSlide { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  .msg-avatar {
+    width:32px; height:32px; border-radius:3px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.75rem; flex-shrink:0; font-family:'Share Tech Mono',monospace;
+  }
+  .msg-avatar.agent { background:rgba(0,212,255,.1); border:1px solid var(--accent2); color:var(--accent); }
+  .msg-avatar.user  { background:rgba(255,107,53,.1); border:1px solid var(--accent3); color:var(--accent3); }
+
+  .msg-bubble {
+    max-width:75%; padding:12px 16px; border-radius:3px;
+    font-size:.85rem; line-height:1.6; position:relative;
+  }
+  .message.agent .msg-bubble { background:var(--panel2); border:1px solid var(--border); border-top-left-radius:0; color:var(--text); }
+  .message.user  .msg-bubble { background:rgba(0,212,255,.06); border:1px solid var(--accent2); border-top-right-radius:0; color:var(--text); }
+
+  .msg-meta { font-family:'Share Tech Mono',monospace; font-size:.58rem; color:var(--text3); margin-top:5px; letter-spacing:.05em; }
+  .message.user .msg-meta { text-align:right; }
+
+  .msg-bubble strong { color:var(--accent); font-weight:600; }
+  .msg-bubble code { font-family:'Share Tech Mono',monospace; background:rgba(0,212,255,.08); padding:1px 5px; border-radius:2px; font-size:.8em; color:var(--accent); }
+  .msg-bubble ul { padding-left:16px; margin:6px 0; }
+  .msg-bubble li { margin:3px 0; }
+
+  .typing-indicator { display:flex; align-items:center; gap:4px; padding:4px 0; }
+  .typing-indicator span { width:6px; height:6px; background:var(--accent); border-radius:50%; animation:bounce 1.2s ease-in-out infinite; }
+  .typing-indicator span:nth-child(2){animation-delay:.2s}
+  .typing-indicator span:nth-child(3){animation-delay:.4s}
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:.5} 40%{transform:translateY(-6px);opacity:1} }
+
+  /* ── Quick prompts ── */
+  .quick-prompts {
+    padding:12px 20px; border-top:1px solid var(--border);
+    display:flex; gap:8px; flex-wrap:wrap; background:rgba(5,10,20,.3);
+  }
+  .quick-btn {
+    padding:5px 12px; background:transparent;
+    border:1px solid var(--border); border-radius:2px;
+    color:var(--text2); font-size:.7rem; font-family:'Exo 2',sans-serif;
+    cursor:pointer; transition:all .2s; letter-spacing:.03em;
+  }
+  .quick-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,.05); }
+
+  /* ── Input ── */
+  .input-area {
+    padding:16px 20px; border-top:1px solid var(--border);
+    display:flex; gap:12px; align-items:flex-end;
+    background:rgba(5,10,20,.5);
+  }
+  .input-wrapper { flex:1; position:relative; }
+  .chat-input {
+    width:100%; background:var(--bg2); border:1px solid var(--border); border-radius:3px;
+    padding:10px 14px; color:var(--text); font-family:'Exo 2',sans-serif;
+    font-size:.85rem; resize:none; min-height:42px; max-height:120px;
+    line-height:1.5; transition:border-color .2s; outline:none;
+  }
+  .chat-input:focus { border-color:var(--accent2); box-shadow:0 0 0 1px rgba(0,212,255,.15); }
+  .chat-input::placeholder { color:var(--text3); }
+  .send-btn {
+    width:42px; height:42px; background:rgba(0,212,255,.1);
+    border:1px solid var(--accent2); border-radius:3px;
+    color:var(--accent); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .2s; flex-shrink:0; font-size:1rem;
+  }
+  .send-btn:hover { background:rgba(0,212,255,.2); box-shadow:0 0 20px rgba(0,212,255,.3); }
+  .send-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+  /* ── Welcome ── */
+  .welcome-screen {
+    flex:1; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    padding:40px; text-align:center; gap:20px;
+  }
+  .welcome-icon { font-size:3rem; animation:float 4s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-10px) rotate(5deg)} }
+  .welcome-title { font-family:'Rajdhani',sans-serif; font-size:1.5rem; font-weight:700; letter-spacing:.1em; color:var(--text); }
+  .welcome-sub { font-size:.8rem; color:var(--text2); max-width:400px; line-height:1.7; }
+  .use-cases { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; width:100%; max-width:500px; }
+  .use-case-tag {
+    padding:8px 12px; background:rgba(0,212,255,.05);
+    border:1px solid var(--border); border-radius:2px;
+    font-size:.7rem; color:var(--text2); text-align:center;
+    cursor:pointer; transition:all .2s;
+  }
+  .use-case-tag:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,.08); }
+
+  @media(max-width:800px){
+    .main-layout { grid-template-columns:1fr; }
+    .sidebar { display:none; }
+    .use-cases { grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22 8 L36 20 L22 18 L8 20 Z" fill="#00d4ff" opacity="0.9"/>
+        <path d="M22 18 L28 32 L22 28 L16 32 Z" fill="#0088cc" opacity="0.7"/>
+        <circle cx="22" cy="22" r="20" stroke="#1a3a6a" stroke-width="1" fill="none"/>
+        <circle cx="22" cy="22" r="3" fill="#00d4ff" opacity="0.8"/>
+      </svg>
+      <div class="logo-text">
+        <h1>AEROAGENT</h1>
+        <span>Aviation Operations Intelligence System</span>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="badge badge-green">LIVE</div>
+      <div class="status-dot"></div>
+      <div class="status-text">SYSTEM NOMINAL</div>
+    </div>
+  </header>
+
+  <!-- ── MAIN LAYOUT ── -->
+  <div class="main-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <div class="sidebar">
+      <div>
+        <div class="section-label">Operations Modules</div>
+        <div class="modules-grid" id="modulesGrid"></div>
+      </div>
+
+      <div class="info-panel">
+        <div class="section-label">Station Info</div>
+        <div class="flight-info">
+          <div class="info-row"><span class="info-key">STATION</span><span class="info-val">SJO / MROC</span></div>
+          <div class="info-row"><span class="info-key">UTC TIME</span><span class="info-val" id="utcTime">--:--:--</span></div>
+          <div class="info-row"><span class="info-key">LOCAL</span><span class="info-val" id="localTime">--:--:--</span></div>
+          <div class="info-row"><span class="info-key">STATUS</span><span class="info-val green">OPERATIONAL</span></div>
+          <div class="info-row"><span class="info-key">MODEL</span><span class="info-val">SONNET 4.6</span></div>
+        </div>
+      </div>
+
+      <div class="info-panel">
+        <div class="section-label">Active Alerts</div>
+        <div class="flight-info">
+          <div class="info-row"><span class="info-key">WCH REQUESTS</span><span class="info-val yellow">2 PENDING</span></div>
+          <div class="info-row"><span class="info-key">RAMP STATUS</span><span class="info-val green">CLEAR</span></div>
+          <div class="info-row"><span class="info-key">AVSEC LEVEL</span><span class="info-val yellow">AMBER</span></div>
+        </div>
+      </div>
+
+      <!-- API KEY INPUT -->
+      <div class="info-panel">
+        <div class="section-label">API Configuration</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+          <input
+            type="password"
+            id="apiKeyInput"
+            placeholder="sk-ant-api03-..."
+            style="
+              background:var(--bg2); border:1px solid var(--border); border-radius:3px;
+              padding:8px 10px; color:var(--text); font-family:'Share Tech Mono',monospace;
+              font-size:.65rem; outline:none; width:100%;
+            "
+            oninput="API_KEY = this.value.trim()"
+          />
+          <span style="font-size:.6rem;color:var(--text3);">Enter your Anthropic API key above, or set it in the script.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHAT AREA ── -->
+    <div class="chat-area" id="chatArea">
+      <div class="chat-header">
+        <span class="chat-module-tag" id="moduleTag">SELECT MODULE</span>
+        <span class="chat-title" id="chatTitle">Aviation Operations Intelligence</span>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="welcome-icon">✈️</div>
+          <div class="welcome-title">AEROAGENT READY</div>
+          <div class="welcome-sub">
+            Select an operations module from the sidebar to activate specialized aviation AI assistance.
+            Each module is loaded with domain-specific knowledge and procedures.
+          </div>
+          <div class="use-cases">
+            <div class="use-case-tag" onclick="selectModule('avsec')">🛡️ AVSEC</div>
+            <div class="use-case-tag" onclick="selectModule('ramp')">🛫 Ramp Ops</div>
+            <div class="use-case-tag" onclick="selectModule('wheelchair')">♿ Mobility</div>
+            <div class="use-case-tag" onclick="selectModule('schedule')">📅 Schedule</div>
+            <div class="use-case-tag" onclick="selectModule('flightplan')">🗺️ Flight Plan</div>
+            <div class="use-case-tag" onclick="selectModule('cargo')">📦 Cargo</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-prompts" id="quickPrompts" style="display:none;"></div>
+
+      <div class="input-area">
+        <div class="input-wrapper">
+          <textarea
+            id="chatInput"
+            class="chat-input"
+            placeholder="Select a module and type your query..."
+            rows="1"
+          ></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">▶</button>
+      </div>
+    </div>
+
+  </div><!-- /main-layout -->
+</div><!-- /container -->
+
+<script>
+  /* ===========================================================
+     CONFIGURATION
+     Set your Anthropic API key here, OR type it in the sidebar
+     input field at runtime.
+     =========================================================== */
+  let API_KEY = ""; // <-- PASTE YOUR KEY HERE e.g. "sk-ant-api03-xxxx"
+
+  /* ===========================================================
+     MODULE DEFINITIONS
+     Each module has a specialized system prompt that makes the
+     Claude model respond as a domain expert for that area.
+     =========================================================== */
+  const MODULES = [
+    {
+      id: "avsec",
+      icon: "🛡️",
+      name: "AVSEC",
+      desc: "Aviation Security",
+      tag: "AVSEC OPS",
+      title: "Aviation Security Intelligence",
+      systemPrompt: `You are AeroAgent AVSEC — an aviation security (AVSEC) specialist AI for ground operations. You are an expert in:
+- ICAO Annex 17 security standards and procedures
+- Threat assessment and suspicious activity recognition
+- Access control, sterile areas, and perimeter security
+- Passenger and baggage screening procedures
+- Security incident response and escalation protocols
+- Prohibited items lists and detection methods
+- Air cargo security (Known Shipper, Regulated Agent)
+- Staff security training requirements
+- Aviation security regulations (TSA, EASA, local authorities)
+Always prioritize safety. Provide actionable, clear guidance. Use aviation industry terminology. Format responses clearly with bullet points or numbered steps when listing procedures. If a situation sounds like an active threat, always advise immediate escalation to airport security authority.`,
+      quickPrompts: ["Suspicious item checklist", "Access control breach procedure", "Threat level protocols", "Cargo security requirements"]
+    },
+    {
+      id: "ramp",
+      icon: "🛫",
+      name: "Ramp Ops",
+      desc: "Ground Handling",
+      tag: "RAMP CTRL",
+      title: "Ramp Operations Control",
+      systemPrompt: `You are AeroAgent RAMP — an expert in airline ground handling and ramp operations. Your knowledge covers:
+- Aircraft marshalling, pushback, and towing procedures
+- FOD (Foreign Object Debris) prevention and control
+- Ground power units (GPU), air starters, and ground support equipment
+- Fueling procedures and fuel load calculations
+- Loading, unloading, and weight & balance basics
+- Aircraft turnaround procedures and timelines
+- Ramp safety rules, PPE, and jet blast zones
+- Ground incidents: spills, minor damage, emergency stops
+- Pre-departure checks and walkaround procedures
+- Communication protocols between ramp, tower, and gate agents
+Provide safety-first guidance. Use standard IATA ground handling codes and terminology. Format step-by-step procedures clearly.`,
+      quickPrompts: ["Turnaround checklist", "FOD procedure", "Weight & balance basics", "Ramp safety rules"]
+    },
+    {
+      id: "wheelchair",
+      icon: "♿",
+      name: "Mobility Assist",
+      desc: "Wheelchair & PRM",
+      tag: "PRM SVC",
+      title: "Passenger Reduced Mobility Services",
+      systemPrompt: `You are AeroAgent PRM — a specialist in Persons with Reduced Mobility (PRM) and wheelchair assistance services in aviation. You are expert in:
+- EU Regulation 1107/2006 and equivalent global standards
+- IATA wheelchair service codes: WCHR, WCHS, WCHC, WCHP
+- Booking and pre-notification requirements
+- Airport PRM service delivery processes
+- Ambulift and special boarding equipment
+- Procedures for passengers with various disabilities
+- Invisible disabilities and cognitive/sensory impairments
+- Medical clearance (MEDIF) and stretcher requests (STCR)
+- Service dog and assistance animal policies
+- Staff training requirements for PRM handling
+- Complaint handling and service recovery
+Always respond with empathy and dignity-first language. Provide clear service procedures. Help staff give excellent, respectful service.`,
+      quickPrompts: ["WCHR vs WCHC difference", "Ambulift checklist", "MEDIF requirements", "Pre-notification process"]
+    },
+    {
+      id: "schedule",
+      icon: "📅",
+      name: "Scheduling",
+      desc: "Flight & Crew Ops",
+      tag: "OPS SCHED",
+      title: "Operations Scheduling",
+      systemPrompt: `You are AeroAgent SCHED — an expert in airline flight and crew scheduling. Your expertise includes:
+- Flight schedule optimization and slot management
+- Crew pairing and rostering principles
+- FTL (Flight Time Limitations) and rest requirements (EASA ORO.FTL, FAA Part 117)
+- Aircraft rotation planning and maintenance windows
+- Delay management and recovery procedures
+- IROP (Irregular Operations) handling
+- Slot allocation at congested airports (Level 1/2/3)
+- Codeshare and interline scheduling coordination
+- Ground handling agreements and turnaround times
+- Season planning and schedule filing (SSIM, OAG)
+- ATC flow management and CTOT (Calculated Take-Off Time)
+Provide structured scheduling advice. Be precise with times (always specify UTC vs local). Highlight regulatory compliance considerations.`,
+      quickPrompts: ["IROP recovery steps", "FTL rest requirements", "Delay reporting codes", "Slot management tips"]
+    },
+    {
+      id: "flightplan",
+      icon: "🗺️",
+      name: "Flight Plan",
+      desc: "Nav & ATC",
+      tag: "FPL OPS",
+      title: "Flight Plan & Navigation Ops",
+      systemPrompt: `You are AeroAgent FPL — a specialist in flight planning, navigation, and ATC procedures. Your knowledge spans:
+- ICAO flight plan format (Form 4444 / DOC 7030)
+- Flight plan fields: callsign, equipment codes, routes, alternates
+- EUROCONTROL/FAA/regional ATC requirements
+- Route planning: airways, RNAV, direct routes
+- Fuel planning: trip fuel, reserve, alternate, contingency
+- NOTAMs interpretation and TFRs
+- Weather integration: METAR, TAF, SIGMET, PIREP
+- Aircraft performance basics: V speeds, climb/cruise profiles
+- Special procedures: RVSM, PBN, RNP-AR
+- Filing procedures and amendments
+- ATC clearance phraseology
+Always use ICAO standard abbreviations. Be precise with units (ft, nm, kt, kg/lbs). Format flight plan elements clearly.`,
+      quickPrompts: ["ICAO FPL format", "Alternate fuel requirements", "NOTAM interpretation", "RVSM requirements"]
+    },
+    {
+      id: "cargo",
+      icon: "📦",
+      name: "Cargo Ops",
+      desc: "Air Freight & DGR",
+      tag: "CARGO OPS",
+      title: "Cargo & Dangerous Goods Operations",
+      systemPrompt: `You are AeroAgent CARGO — an expert in air cargo operations and dangerous goods regulations. Your expertise includes:
+- IATA Dangerous Goods Regulations (DGR) — all 9 classes
+- UN numbers, proper shipping names, packing groups
+- Shipper's Declaration for Dangerous Goods
+- Quantity limits: passenger vs cargo aircraft
+- Packing instructions and labeling requirements
+- Segregation requirements for incompatible goods
+- AWB (Air Waybill) completion and documentation
+- ULD (Unit Load Device) types, limits, and loading
+- Temperature-sensitive cargo: Pharma, perishables, live animals
+- CITES regulations for wildlife shipments
+- Security requirements for air cargo
+- Customs documentation: HS codes, EAR, ITAR basics
+Always cite specific IATA DGR packing instructions when relevant. Safety is paramount — when in doubt, refuse and consult. Use IATA commodity codes.`,
+      quickPrompts: ["DGR class definitions", "Lithium battery rules", "ULD weight limits", "Live animals checklist"]
+    }
+  ];
+
+  /* ===========================================================
+     STATE
+     =========================================================== */
+  let activeModule       = null;
+  let conversationHistory = [];
+  let isThinking         = false;
+
+  /* ===========================================================
+     INIT
+     =========================================================== */
+  function init() {
+    // Render module buttons
+    const grid = document.getElementById("modulesGrid");
+    MODULES.forEach(mod => {
+      const btn = document.createElement("button");
+      btn.className = "module-btn";
+      btn.id = "mod-" + mod.id;
+      btn.onclick = () => selectModule(mod.id);
+      btn.innerHTML = `
+        <span class="module-icon">${mod.icon}</span>
+        <div class="module-info">
+          <div class="module-name">${mod.name}</div>
+          <div class="module-desc">${mod.desc}</div>
+        </div>`;
+      grid.appendChild(btn);
+    });
+
+    // Clocks
+    updateClocks();
+    setInterval(updateClocks, 1000);
+
+    // Input auto-resize + Enter to send
+    const input = document.getElementById("chatInput");
+    input.addEventListener("input", () => {
+      input.style.height = "auto";
+      input.style.height = Math.min(input.scrollHeight, 120) + "px";
+    });
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+  }
+
+  function updateClocks() {
+    const now = new Date();
+    document.getElementById("utcTime").textContent   = now.toUTCString().slice(17, 25);
+    document.getElementById("localTime").textContent = now.toLocaleTimeString("en-US", { hour12: false });
+  }
+
+  /* ===========================================================
+     MODULE SELECTION
+     =========================================================== */
+  function selectModule(modId) {
+    const mod = MODULES.find(m => m.id === modId);
+    if (!mod) return;
+
+    // Highlight button
+    document.querySelectorAll(".module-btn").forEach(b => b.classList.remove("active"));
+    const btn = document.getElementById("mod-" + modId);
+    if (btn) btn.classList.add("active");
+
+    activeModule = mod;
+    conversationHistory = [];
+
+    // Update header tags
+    document.getElementById("moduleTag").textContent  = mod.tag;
+    document.getElementById("chatTitle").textContent  = mod.title;
+
+    // Clear chat and show greeting
+    document.getElementById("chatMessages").innerHTML = "";
+    addAgentMessage(`**${mod.icon} ${mod.name} MODULE ACTIVATED**\n\nI am AeroAgent specialized in ${mod.title}. I have deep knowledge of industry regulations, procedures, and best practices for this domain.\n\nHow can I assist your operations today?`);
+
+    // Quick prompts bar
+    const qp = document.getElementById("quickPrompts");
+    qp.style.display = "flex";
+    qp.innerHTML = "";
+    mod.quickPrompts.forEach(p => {
+      const btn = document.createElement("button");
+      btn.className = "quick-btn";
+      btn.textContent = p;
+      btn.onclick = () => {
+        document.getElementById("chatInput").value = p;
+        sendMessage();
+      };
+      qp.appendChild(btn);
+    });
+  }
+
+  /* ===========================================================
+     MESSAGE RENDERING
+     =========================================================== */
+  function addAgentMessage(text) {
+    const msgs = document.getElementById("chatMessages");
+    const div  = document.createElement("div");
+    div.className = "message agent";
+    const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+    div.innerHTML = `
+      <div class="msg-avatar agent">AI</div>
+      <div>
+        <div class="msg-bubble">${formatText(text)}</div>
+        <div class="msg-meta">AEROAGENT · ${time} UTC</div>
+      </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addUserMessage(text) {
+    const msgs = document.getElementById("chatMessages");
+    const div  = document.createElement("div");
+    div.className = "message user";
+    const time = new Date().toLocaleTimeString("en-US", { hour12: false });
+    div.innerHTML = `
+      <div class="msg-avatar user">OPS</div>
+      <div>
+        <div class="msg-bubble">${formatText(text)}</div>
+        <div class="msg-meta">${time} UTC · OPERATOR</div>
+      </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addTypingIndicator() {
+    const msgs = document.getElementById("chatMessages");
+    const div  = document.createElement("div");
+    div.className = "message agent";
+    div.id = "typingIndicator";
+    div.innerHTML = `
+      <div class="msg-avatar agent">AI</div>
+      <div>
+        <div class="msg-bubble">
+          <div class="typing-indicator"><span></span><span></span><span></span></div>
+        </div>
+      </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const t = document.getElementById("typingIndicator");
+    if (t) t.remove();
+  }
+
+  function formatText(text) {
+    // Very light markdown: **bold**, `code`, bullet lists, newlines
+    return text
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")  // escape HTML
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/`(.*?)`/g, "<code>$1</code>")
+      .replace(/\n- /g, "\n• ")
+      .replace(/\n/g, "<br>");
+  }
+
+  /* ===========================================================
+     SEND MESSAGE → ANTHROPIC API
+     =========================================================== */
+  async function sendMessage() {
+    if (isThinking) return;
+
+    const input = document.getElementById("chatInput");
+    const text  = input.value.trim();
+    if (!text) return;
+
+    if (!activeModule) {
+      alert("Please select an operations module first (sidebar or quick-tiles).");
+      return;
+    }
+
+    const key = API_KEY || document.getElementById("apiKeyInput").value.trim();
+    if (!key || !key.startsWith("sk-")) {
+      alert("Please enter your Anthropic API key in the sidebar field (bottom-left) or set it in the script.");
+      return;
+    }
+
+    input.value = "";
+    input.style.height = "auto";
+    isThinking = true;
+    document.getElementById("sendBtn").disabled = true;
+
+    addUserMessage(text);
+    conversationHistory.push({ role: "user", content: text });
+    addTypingIndicator();
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type":            "application/json",
+          "x-api-key":               key,
+          "anthropic-version":       "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model:      "claude-sonnet-4-20250514",
+          max_tokens: 1024,
+          system:     activeModule.systemPrompt,
+          messages:   conversationHistory
+        })
+      });
+
+      const data = await response.json();
+      removeTypingIndicator();
+
+      let reply = "";
+      if (data.content && data.content.length > 0) {
+        reply = data.content.map(b => b.text || "").join("");
+      } else if (data.error) {
+        reply = `**API Error ${data.error.type}:** ${data.error.message}`;
+      } else {
+        reply = "No response received. Check your API key and network connection.";
+      }
+
+      conversationHistory.push({ role: "assistant", content: reply });
+      addAgentMessage(reply);
+
+    } catch (err) {
+      removeTypingIndicator();
+      addAgentMessage(
+        `**Connection Error:** Unable to reach the Anthropic API.\n\n` +
+        `**Possible causes:**\n` +
+        `- Missing or invalid API key\n` +
+        `- CORS restriction (use a local server or CodePen)\n` +
+        `- Network issue\n\n` +
+        "`" + err.message + "`"
+      );
+    }
+
+    isThinking = false;
+    document.getElementById("sendBtn").disabled = false;
+    document.getElementById("chatInput").focus();
+  }
+
+  /* ===========================================================
+     BOOTSTRAP
+     =========================================================== */
+  init();
+</script>
+</body>
+</html>
