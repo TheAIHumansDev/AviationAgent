@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AeroAgent v2 — Expert Aviation Operations</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Exo+2:ital,wght@0,200;0,300;0,400;0,600;1,300&display=swap');
+
+:root {
+  --bg:      #040810;
+  --bg2:     #070d1a;
+  --panel:   #091422;
+  --panel2:  #0c1a2e;
+  --panel3:  #0f2040;
+  --border:  #162d52;
+  --border2: #1e3f6e;
+  --accent:  #00c8f0;
+  --accent2: #0088bb;
+  --accent3: #ff6b35;
+  --green:   #00e87a;
+  --yellow:  #ffc840;
+  --red:     #ff3d5a;
+  --purple:  #9b6dff;
+  --text:    #b8d4ee;
+  --text2:   #6a90b8;
+  --text3:   #2e4e72;
+  --text4:   #1a2e44;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Exo 2',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* Animated radar grid bg */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,200,240,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,200,240,.025) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+  animation:gridDrift 40s linear infinite;
+}
+@keyframes gridDrift{from{background-position:0 0}to{background-position:48px 48px}}
+
+.container{
+  position:relative;z-index:1;
+  max-width:1520px;margin:0 auto;
+  padding:16px;
+  display:flex;flex-direction:column;gap:16px;
+  min-height:100vh;
+}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;gap:16px;
+  padding:14px 24px;
+  background:linear-gradient(135deg,rgba(9,20,34,.96),rgba(7,13,26,.98));
+  border:1px solid var(--border);border-radius:4px;
+  position:relative;overflow:hidden;
+}
+header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--purple),transparent);
+  animation:scanH 4s linear infinite;
+}
+@keyframes scanH{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+
+.logo{display:flex;align-items:center;gap:14px;}
+.logo-mark{
+  width:42px;height:42px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-mark svg{width:42px;height:42px;}
+.logo-text h1{
+  font-family:'Rajdhani',sans-serif;font-size:1.9rem;font-weight:700;
+  letter-spacing:.18em;
+  background:linear-gradient(120deg,#fff 0%,var(--accent) 60%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo-text .ver{
+  font-family:'Share Tech Mono',monospace;font-size:.6rem;
+  color:var(--accent);letter-spacing:.3em;opacity:.7;
+}
+
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.hdr-pill{
+  padding:3px 10px;border-radius:2px;
+  font-family:'Share Tech Mono',monospace;font-size:.58rem;letter-spacing:.12em;
+  background:rgba(0,232,122,.08);color:var(--green);border:1px solid rgba(0,232,122,.25);
+}
+.hdr-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 10px var(--green);
+  animation:pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
+.hdr-sys{font-family:'Share Tech Mono',monospace;font-size:.68rem;color:var(--green);letter-spacing:.1em;}
+
+/* ── LAYOUT ── */
+.main{
+  display:grid;grid-template-columns:260px 1fr 240px;gap:16px;
+  flex:1;min-height:0;
+}
+
+/* ── SIDEBAR LEFT ── */
+.sidebar-l{display:flex;flex-direction:column;gap:12px;}
+
+.panel{
+  padding:14px 16px;
+  background:var(--panel);border:1px solid var(--border);border-radius:3px;
+}
+.panel-label{
+  font-family:'Share Tech Mono',monospace;font-size:.58rem;
+  letter-spacing:.28em;color:var(--text3);text-transform:uppercase;
+  padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:10px;
+}
+
+.mod-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;width:100%;
+  background:var(--panel);border:1px solid var(--border);border-radius:3px;
+  cursor:pointer;text-align:left;transition:all .2s;font-family:inherit;
+  position:relative;overflow:hidden;margin-bottom:5px;
+}
+.mod-btn::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:transparent;transition:all .2s;
+}
+.mod-btn:hover{border-color:var(--accent2);background:var(--panel2);}
+.mod-btn.active{border-color:var(--accent);background:var(--panel2);}
+.mod-btn.active::before{background:var(--accent);box-shadow:0 0 16px rgba(0,200,240,.4);}
+.mod-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+.mod-name{font-family:'Rajdhani',sans-serif;font-weight:600;font-size:.82rem;letter-spacing:.05em;color:var(--text);}
+.mod-btn.active .mod-name{color:var(--accent);}
+.mod-sub{font-size:.6rem;color:var(--text3);margin-top:1px;}
+
+/* station info */
+.info-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.ik{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--text3);}
+.iv{font-family:'Share Tech Mono',monospace;font-size:.66rem;color:var(--accent);}
+.iv.g{color:var(--green);}
+.iv.y{color:var(--yellow);}
+.iv.r{color:var(--red);}
+
+/* api key */
+.api-input{
+  width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:3px;
+  padding:7px 10px;color:var(--text);font-family:'Share Tech Mono',monospace;
+  font-size:.62rem;outline:none;transition:border-color .2s;
+}
+.api-input:focus{border-color:var(--accent2);}
+.api-input.ok{border-color:rgba(0,232,122,.45);}
+.api-input.bad{border-color:rgba(255,61,90,.45);}
+.key-status{
+  display:flex;align-items:center;gap:6px;margin-top:5px;
+  font-family:'Share Tech Mono',monospace;font-size:.58rem;
+}
+.ks-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+
+/* ── CHAT ── */
+.chat-wrap{
+  display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--border);border-radius:4px;
+  overflow:hidden;min-height:680px;
+}
+.chat-hdr{
+  padding:12px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+  background:rgba(4,8,16,.6);flex-shrink:0;
+}
+.chat-tag{
+  font-family:'Share Tech Mono',monospace;font-size:.62rem;
+  letter-spacing:.14em;padding:2px 9px;
+  background:rgba(0,200,240,.08);border:1px solid var(--accent2);
+  border-radius:2px;color:var(--accent);
+}
+.chat-title{font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:600;letter-spacing:.04em;}
+.tool-badges{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;}
+.tool-badge{
+  font-family:'Share Tech Mono',monospace;font-size:.52rem;
+  padding:2px 7px;border-radius:2px;letter-spacing:.08em;
+  background:rgba(155,109,255,.1);border:1px solid rgba(155,109,255,.3);color:var(--purple);
+}
+
+.chat-msgs{
+  flex:1;overflow-y:auto;padding:20px;
+  display:flex;flex-direction:column;gap:14px;
+  scroll-behavior:smooth;
+}
+.chat-msgs::-webkit-scrollbar{width:3px;}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* messages */
+.msg{display:flex;gap:10px;animation:msgIn .3s ease-out;}
+.msg.user{flex-direction:row-reverse;}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.av{
+  width:30px;height:30px;border-radius:3px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:.65rem;
+}
+.av.ai{background:rgba(0,200,240,.08);border:1px solid var(--accent2);color:var(--accent);}
+.av.usr{background:rgba(255,107,53,.08);border:1px solid var(--accent3);color:var(--accent3);}
+
+.bubble{
+  max-width:78%;padding:11px 15px;border-radius:3px;
+  font-size:.82rem;line-height:1.65;
+}
+.msg.ai .bubble{background:var(--panel2);border:1px solid var(--border);border-top-left-radius:0;color:var(--text);}
+.msg.user .bubble{background:rgba(0,200,240,.05);border:1px solid var(--accent2);border-top-right-radius:0;}
+
+.bubble strong{color:var(--accent);font-weight:600;}
+.bubble em{color:var(--yellow);font-style:normal;}
+.bubble code{
+  font-family:'Share Tech Mono',monospace;
+  background:rgba(0,200,240,.07);padding:1px 5px;border-radius:2px;
+  font-size:.78em;color:var(--accent);
+}
+.bubble pre{
+  background:rgba(0,0,0,.4);border:1px solid var(--border2);border-radius:3px;
+  padding:10px 12px;margin:8px 0;overflow-x:auto;
+  font-family:'Share Tech Mono',monospace;font-size:.75em;color:var(--text);
+  white-space:pre-wrap;word-break:break-all;
+}
+.bubble ul,.bubble ol{padding-left:18px;margin:6px 0;}
+.bubble li{margin:3px 0;}
+.bubble hr{border:none;border-top:1px solid var(--border);margin:8px 0;}
+
+/* tool call display */
+.tool-call{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:8px 12px;margin:6px 0;
+  background:rgba(155,109,255,.05);border:1px solid rgba(155,109,255,.2);
+  border-radius:3px;border-left:2px solid var(--purple);
+}
+.tc-icon{font-size:.75rem;flex-shrink:0;margin-top:1px;}
+.tc-body{flex:1;min-width:0;}
+.tc-name{font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--purple);letter-spacing:.05em;}
+.tc-detail{font-size:.72rem;color:var(--text2);margin-top:2px;word-break:break-all;}
+.tc-result{
+  margin-top:6px;padding:6px 8px;
+  background:rgba(0,0,0,.3);border-radius:2px;
+  font-family:'Share Tech Mono',monospace;font-size:.66rem;color:var(--text2);
+  max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;
+}
+
+.msg-meta{font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--text4);margin-top:4px;letter-spacing:.04em;}
+.msg.user .msg-meta{text-align:right;}
+
+/* typing */
+.typing-dots{display:flex;align-items:center;gap:4px;padding:3px 0;}
+.typing-dots span{width:5px;height:5px;background:var(--accent);border-radius:50%;animation:dot 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{transform:translateY(0);opacity:.4}40%{transform:translateY(-5px);opacity:1}}
+
+/* quick prompts */
+.quick-row{
+  padding:10px 20px;border-top:1px solid var(--border);
+  display:flex;gap:6px;flex-wrap:wrap;background:rgba(4,8,16,.4);flex-shrink:0;
+}
+.qbtn{
+  padding:4px 10px;background:transparent;
+  border:1px solid var(--border);border-radius:2px;
+  color:var(--text2);font-size:.67rem;font-family:'Exo 2',sans-serif;
+  cursor:pointer;transition:all .2s;
+}
+.qbtn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,200,240,.04);}
+
+/* input */
+.input-row{
+  padding:14px 20px;border-top:1px solid var(--border);
+  display:flex;gap:10px;align-items:flex-end;
+  background:rgba(4,8,16,.6);flex-shrink:0;
+}
+.chat-in{
+  flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:3px;
+  padding:9px 13px;color:var(--text);font-family:'Exo 2',sans-serif;
+  font-size:.82rem;resize:none;min-height:40px;max-height:110px;
+  line-height:1.5;outline:none;transition:border-color .2s;
+}
+.chat-in:focus{border-color:var(--accent2);box-shadow:0 0 0 1px rgba(0,200,240,.12);}
+.chat-in::placeholder{color:var(--text3);}
+.send-btn{
+  width:40px;height:40px;background:rgba(0,200,240,.1);
+  border:1px solid var(--accent2);border-radius:3px;
+  color:var(--accent);cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;font-size:.95rem;
+}
+.send-btn:hover{background:rgba(0,200,240,.2);box-shadow:0 0 18px rgba(0,200,240,.25);}
+.send-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ── SIDEBAR RIGHT ── */
+.sidebar-r{display:flex;flex-direction:column;gap:12px;}
+
+/* live data widgets */
+.data-widget{
+  padding:12px 14px;
+  background:var(--panel);border:1px solid var(--border);border-radius:3px;
+}
+.dw-label{
+  font-family:'Share Tech Mono',monospace;font-size:.55rem;
+  letter-spacing:.25em;color:var(--text3);text-transform:uppercase;
+  padding-bottom:7px;border-bottom:1px solid var(--border);margin-bottom:8px;
+}
+.dw-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.dw-k{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--text3);}
+.dw-v{font-family:'Share Tech Mono',monospace;font-size:.63rem;color:var(--accent);}
+.dw-v.g{color:var(--green);}
+.dw-v.y{color:var(--yellow);}
+.dw-v.r{color:var(--red);}
+
+.notam-item{
+  padding:7px 10px;margin-bottom:5px;
+  background:rgba(255,200,64,.04);border:1px solid rgba(255,200,64,.15);
+  border-left:2px solid var(--yellow);border-radius:2px;
+}
+.notam-id{font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--yellow);}
+.notam-txt{font-size:.65rem;color:var(--text2);margin-top:2px;line-height:1.4;}
+
+.metar-box{
+  padding:8px 10px;
+  background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:2px;
+  font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--green);
+  line-height:1.6;word-break:break-all;
+}
+
+/* welcome */
+.welcome{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:40px;text-align:center;gap:18px;
+}
+.w-icon{font-size:2.8rem;animation:float 4s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-8px) rotate(4deg)}}
+.w-title{font-family:'Rajdhani',sans-serif;font-size:1.4rem;font-weight:700;letter-spacing:.1em;}
+.w-sub{font-size:.77rem;color:var(--text2);max-width:380px;line-height:1.7;}
+.w-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px;width:100%;max-width:480px;}
+.w-tag{
+  padding:7px 10px;background:rgba(0,200,240,.04);
+  border:1px solid var(--border);border-radius:2px;
+  font-size:.67rem;color:var(--text2);cursor:pointer;transition:all .2s;
+}
+.w-tag:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,200,240,.07);}
+
+/* tool capabilities tag list */
+.cap-grid{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px;}
+.cap-tag{
+  padding:2px 7px;border-radius:2px;
+  font-family:'Share Tech Mono',monospace;font-size:.55rem;letter-spacing:.06em;
+}
+.cap-tag.web{background:rgba(0,200,240,.07);border:1px solid rgba(0,200,240,.2);color:var(--accent);}
+.cap-tag.calc{background:rgba(0,232,122,.07);border:1px solid rgba(0,232,122,.2);color:var(--green);}
+.cap-tag.parse{background:rgba(155,109,255,.07);border:1px solid rgba(155,109,255,.2);color:var(--purple);}
+.cap-tag.data{background:rgba(255,200,64,.07);border:1px solid rgba(255,200,64,.2);color:var(--yellow);}
+
+@media(max-width:1100px){
+  .main{grid-template-columns:240px 1fr;}
+  .sidebar-r{display:none;}
+}
+@media(max-width:760px){
+  .main{grid-template-columns:1fr;}
+  .sidebar-l{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="21" cy="21" r="20" stroke="#162d52" stroke-width="1"/>
+        <circle cx="21" cy="21" r="14" stroke="#1e3f6e" stroke-width=".5" stroke-dasharray="2 3"/>
+        <circle cx="21" cy="21" r="8"  stroke="#0088bb" stroke-width=".5" stroke-dasharray="1 2"/>
+        <path d="M21 5 L33 18 L21 16 L9 18 Z" fill="#00c8f0" opacity=".9"/>
+        <path d="M21 16 L26 29 L21 26 L16 29 Z" fill="#0088bb" opacity=".7"/>
+        <circle cx="21" cy="21" r="2.5" fill="#00c8f0" opacity=".9"/>
+        <line x1="21" y1="1" x2="21" y2="5"  stroke="#00c8f0" stroke-width=".7" opacity=".4"/>
+        <line x1="21" y1="37" x2="21" y2="41" stroke="#00c8f0" stroke-width=".7" opacity=".4"/>
+        <line x1="1"  y1="21" x2="5"  y2="21" stroke="#00c8f0" stroke-width=".7" opacity=".4"/>
+        <line x1="37" y1="21" x2="41" y2="21" stroke="#00c8f0" stroke-width=".7" opacity=".4"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <h1>AEROAGENT</h1>
+      <div class="ver">V2.0 · EXPERT OPS EDITION</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-pill">WEB SEARCH ENABLED</div>
+    <div class="hdr-pill" style="background:rgba(155,109,255,.08);color:var(--purple);border-color:rgba(155,109,255,.25);">TOOLS ACTIVE</div>
+    <div class="hdr-dot"></div>
+    <div class="hdr-sys">SYSTEM NOMINAL</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- SIDEBAR LEFT -->
+<div class="sidebar-l">
+  <div class="panel">
+    <div class="panel-label">Operations Modules</div>
+    <div id="modGrid"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">Station</div>
+    <div class="info-row"><span class="ik">ICAO</span><span class="iv">MROC / SJO</span></div>
+    <div class="info-row"><span class="ik">UTC</span><span class="iv" id="utcClock">--:--:--</span></div>
+    <div class="info-row"><span class="ik">LOCAL</span><span class="iv" id="lclClock">--:--:--</span></div>
+    <div class="info-row"><span class="ik">STATUS</span><span class="iv g">OPERATIONAL</span></div>
+    <div class="info-row"><span class="ik">AI MODEL</span><span class="iv">SONNET 4.6</span></div>
+    <div class="info-row"><span class="ik">CONTEXT</span><span class="iv" id="ctxCount">0 msgs</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">Tool Capabilities</div>
+    <div class="cap-grid" id="capGrid"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">Alerts</div>
+    <div class="info-row"><span class="ik">WCH PENDING</span><span class="iv y">2</span></div>
+    <div class="info-row"><span class="ik">RAMP</span><span class="iv g">CLEAR</span></div>
+    <div class="info-row"><span class="ik">AVSEC</span><span class="iv y">AMBER</span></div>
+    <div class="info-row"><span class="ik">WX</span><span class="iv g">VMC</span></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">API Configuration</div>
+    <input type="password" id="apiKeyIn" class="api-input" placeholder="sk-ant-api03-..." spellcheck="false" autocomplete="off"/>
+    <div class="key-status" id="keyStatus">
+      <div class="ks-dot" id="ksDot" style="background:var(--text3)"></div>
+      <span id="ksTxt" style="font-family:'Share Tech Mono',monospace;font-size:.57rem;color:var(--text3)">NO KEY</span>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="chat-wrap">
+  <div class="chat-hdr">
+    <span class="chat-tag" id="modTag">SELECT MODULE</span>
+    <span class="chat-title" id="chatTitle">Aviation Operations Intelligence</span>
+    <div class="tool-badges" id="toolBadges"></div>
+  </div>
+
+  <div class="chat-msgs" id="chatMsgs">
+    <div class="welcome" id="welcome">
+      <div class="w-icon">✈️</div>
+      <div class="w-title">AEROAGENT v2 READY</div>
+      <div class="w-sub">Expert-level aviation intelligence with live web search, NOTAM research, METAR parsing, regulatory lookup, and operational calculations.</div>
+      <div class="w-grid">
+        <div class="w-tag" onclick="selectMod('avsec')">🛡️ AVSEC</div>
+        <div class="w-tag" onclick="selectMod('ramp')">🛫 Ramp</div>
+        <div class="w-tag" onclick="selectMod('wx')">🌦️ Weather</div>
+        <div class="w-tag" onclick="selectMod('notam')">📋 NOTAMs</div>
+        <div class="w-tag" onclick="selectMod('flightplan')">🗺️ Flt Plan</div>
+        <div class="w-tag" onclick="selectMod('cargo')">📦 Cargo</div>
+        <div class="w-tag" onclick="selectMod('schedule')">📅 Sched</div>
+        <div class="w-tag" onclick="selectMod('wb')">⚖️ W&amp;B</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-row" id="quickRow" style="display:none;"></div>
+
+  <div class="input-row">
+    <textarea id="chatIn" class="chat-in" rows="1" placeholder="Select a module and enter your query…"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="send()">▶</button>
+  </div>
+</div>
+
+<!-- SIDEBAR RIGHT -->
+<div class="sidebar-r">
+  <div class="data-widget">
+    <div class="dw-label">Live METAR · MROC</div>
+    <div class="metar-box" id="metarBox">LOADING...</div>
+  </div>
+
+  <div class="data-widget">
+    <div class="dw-label">Active NOTAMs</div>
+    <div id="notamList">
+      <div class="notam-item">
+        <div class="notam-id">A1234/26</div>
+        <div class="notam-txt">RWY 07 CLSD DUE MAINT 0600-1000 UTC</div>
+      </div>
+      <div class="notam-item">
+        <div class="notam-id">A1198/26</div>
+        <div class="notam-txt">ILS CAT I RWY 25R U/S UNTIL FURTHER NOTICE</div>
+      </div>
+      <div class="notam-item">
+        <div class="notam-id">A1156/26</div>
+        <div class="notam-txt">APRON C STAND 12-14 CLSD REHAB WORKS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="data-widget">
+    <div class="dw-label">Traffic Summary</div>
+    <div class="dw-row"><span class="dw-k">DEPARTURES</span><span class="dw-v">14</span></div>
+    <div class="dw-row"><span class="dw-k">ARRIVALS</span><span class="dw-v">11</span></div>
+    <div class="dw-row"><span class="dw-k">ON GROUND</span><span class="dw-v g">6</span></div>
+    <div class="dw-row"><span class="dw-k">DELAYED</span><span class="dw-v y">3</span></div>
+    <div class="dw-row"><span class="dw-k">DIVERTED</span><span class="dw-v r">1</span></div>
+  </div>
+
+  <div class="data-widget">
+    <div class="dw-label">Runway Status</div>
+    <div class="dw-row"><span class="dw-k">RWY 07/25</span><span class="dw-v g">ACTIVE</span></div>
+    <div class="dw-row"><span class="dw-k">PCN</span><span class="dw-v">72/R/B/X/T</span></div>
+    <div class="dw-row"><span class="dw-k">LDA 07</span><span class="dw-v">2986 M</span></div>
+    <div class="dw-row"><span class="dw-k">WIND</span><span class="dw-v" id="windWidget">--</span></div>
+    <div class="dw-row"><span class="dw-k">QNH</span><span class="dw-v" id="qnhWidget">--</span></div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /container -->
+
+<script>
+/* ==========================================================
+   MODULES — each has system prompt + tools + quick prompts
+   ========================================================== */
+const MODS = [
+  {
+    id:'avsec', icon:'🛡️', name:'AVSEC', sub:'Security Operations',
+    tag:'AVSEC OPS', title:'Aviation Security Intelligence',
+    tools:['WEB_SEARCH','REG_LOOKUP','INCIDENT_LOG'],
+    caps:['web','parse','data'],
+    systemPrompt:`You are AeroAgent AVSEC v2 — an expert aviation security intelligence system for ground operations at MROC/SJO (Juan Santamaría International Airport, Costa Rica).
+
+CORE EXPERTISE:
+- ICAO Annex 17 security standards (full working knowledge)
+- Costa Rica DGAC AVSEC regulations and local airport security programs
+- TSA/EASA/OACI comparative regulatory knowledge
+- Threat assessment: BOM/IED identification, suspicious behavior patterns (IATA AVSEC Matrix)
+- Access control: sterile area management, airside credentialing (SRIA/tarjeta roja/verde/amarilla)
+- Passenger/baggage screening: EDS, ETD, physical search procedures
+- Security incident response: CISM protocols, escalation trees, notification chains
+- Air cargo security: Known Shipper, Regulated Agent, ACI/ICS requirements
+- Prohibited items: current ICAO/IATA lists including new lithium battery rules
+- Staff vetting: background check requirements, security clearance levels
+
+WHEN THE USER ASKS ABOUT:
+- Specific threats or incidents: use web_search to find recent precedents and official bulletins
+- Regulations: cite specific ICAO Annex 17 amendment, OACI doc, or local DGAC circular numbers
+- Procedures: provide step-by-step numbered protocols with Go/No-Go decision points
+- Training: reference AVSEC Basic, Screener, Manager certification requirements
+- NOTAM/TFR security restrictions: parse and explain their security implications
+
+RESPONSE FORMAT:
+- Use **bold** for critical actions, monospace for codes/callsigns/designators
+- Numbered lists for procedures, bullet points for checklists
+- Always end security incident responses with ESCALATION PATH and NOTIFICATIONS REQUIRED
+- Include regulatory reference (e.g., "per ICAO Annex 17 §4.3.2") when applicable`,
+    quickPrompts:['AVSEC incident response SOP','Prohibited items — current list','Access control breach procedure','Air cargo Known Shipper requirements','Threat level escalation matrix']
+  },
+  {
+    id:'ramp', icon:'🛫', name:'Ramp Ops', sub:'Ground Handling',
+    tag:'RAMP CTRL', title:'Ramp Operations Control',
+    tools:['WEB_SEARCH','WB_CALC','WEATHER_FETCH'],
+    caps:['calc','web','parse'],
+    systemPrompt:`You are AeroAgent RAMP v2 — an expert ramp operations and ground handling intelligence system for MROC (Juan Santamaría, Costa Rica).
+
+CORE EXPERTISE:
+- Aircraft marshalling, pushback, towing (all IATA codes + Boeing/Airbus specific)
+- FOD prevention: MROC-specific risk areas, FOD walks, reporting procedures
+- GSE: GPU (28V DC / 400Hz), ASU, air stairs (FMC/LEKTRO/TREPEL), belt loaders, tugs
+- Fueling: JETA1/AVGAS, hydrant vs bowser, fuel quality checks, into-wing procedures
+- Weight & Balance: ZFW/TOW/LW, MAC%, index calculation basics, load sheet terminology
+- A/C turnaround: standard times by type (B737/A320/A321/E190/ATR72/B777/B787)
+- Ramp safety: 3m/5m/10m jet blast zones, clearance heights per a/c type, LOTO
+- Ground damage: classification (minor/significant/major), reporting IATA AHM 070
+- Pushback: comm procedures, towbarless vs towbar, hydraulic brakes/parking brake protocol
+- Costa Rica local: MINAE environmental regs for fuel spills, COSEVI for GSE on airside
+
+WHEN ASKED ABOUT:
+- Weight & balance: perform the calculation step-by-step using standard formulas
+- A/C types: reference Boeing/Airbus FCOM/AMM data where relevant
+- Incidents: provide AHM 070 classification + SMS reporting flowchart
+- Weather impact on ops: interpret METAR/ATIS and advise on ramp restrictions`,
+    quickPrompts:['B737 turnaround checklist','FOD walk procedure','GPU connection — A320','Weight & balance basics','Jet blast safety zones by type']
+  },
+  {
+    id:'wx', icon:'🌦️', name:'Weather', sub:'MET & WX Ops',
+    tag:'WX OPS', title:'Meteorology & Weather Operations',
+    tools:['WEB_SEARCH','METAR_PARSE','TAF_PARSE'],
+    caps:['web','parse','data'],
+    systemPrompt:`You are AeroAgent WX v2 — an expert aviation meteorology analyst for MROC/SJO and the Central America / Caribbean region.
+
+CORE EXPERTISE:
+- METAR decoding: all fields including RVR, SNOCLO, runway state groups, trend forecasts
+- TAF interpretation: FM/TEMPO/PROB/BECMG groups, probability qualifiers
+- SIGMET/AIRMET: issuance criteria, en-route hazard assessment
+- PIREP: encoding and interpretation (UA/UUA format)
+- Tropical systems: hurricane/tropical storm impact on airport ops, TCAS procedures
+- CB/TS: detection, avoidance, wake turbulence after convective activity
+- Wind shear: low-level (LLWS), microburst detection, PIREP correlation
+- MROC climatology: rainy season (May-Nov), Pacific/Caribbean weather patterns, XCC/XQP/SYQ alternates
+- Altimetry: QNH/QFE/QNE, transition altitude/level for Costa Rica (11000ft/FL150)
+- Winter ops: de-icing procedures (even though MROC doesn't need them — outbound a/c)
+
+WHEN ASKED TO DECODE A METAR/TAF:
+1. Parse every group systematically
+2. Calculate derived values (density altitude, crosswind component, visibility in SM)
+3. Assess impact on operations (VMC/IMC, CAT I/II/III eligibility, ramp restrictions)
+4. Issue a plain-language OPS SUMMARY
+
+Use web_search to fetch current METAR/TAF from aviationweather.gov when the user asks for live weather.`,
+    quickPrompts:['Decode MROC current METAR','TAF MROC — next 24hr','SIGMET Central America active','Crosswind limits by aircraft type','IFR minimums MROC ILS 07']
+  },
+  {
+    id:'notam', icon:'📋', name:'NOTAMs', sub:'Notices & Restrictions',
+    tag:'NOTAM OPS', title:'NOTAM Research & Analysis',
+    tools:['WEB_SEARCH','NOTAM_PARSE','REG_LOOKUP'],
+    caps:['web','parse','data'],
+    systemPrompt:`You are AeroAgent NOTAM v2 — an expert NOTAM research, parsing, and operational impact analyst.
+
+CORE EXPERTISE:
+- ICAO NOTAM format: Q-line decoding (FIR/subject/condition/scope/lower/upper/coordinates)
+- NOTAM subjects: aerodrome, navaid, airspace, procedures, obstacles, services
+- Snowtam/Ashtam: runway state decoding (NRC format and legacy)
+- TFR (FAA) and RESA/Notam de zona restringida (DGAC Costa Rica)
+- Flight planning impact: altitudes affected, routes blocked, alternate requirements
+- Validity: from/to parsing, PERM, EST, C-series (canceled), R-series (replace)
+- NOTAM briefing: how to compile a complete pre-flight package for MROC departures
+- ICAO Doc 8126: NOTAM origination criteria and standards
+- Digital NOTAM (D-NOTAM) vs traditional format differences
+- AIS Costa Rica: how to obtain NOTAMs via OACI/AIM Costa Rica, ATIS, D-ATIS
+
+WHEN THE USER PROVIDES A NOTAM TEXT:
+1. Decode the Q-line field by field
+2. Extract: what/where/when/who is affected
+3. Calculate operational impact (go/no-go for specific operation types)
+4. Flag critical items in CAPS
+
+WHEN THE USER ASKS TO RESEARCH NOTAMs:
+- Use web_search to look up current NOTAMs on FAA NOTAM Search, Eurocontrol NOTAMinfo, or AIS portals
+- Summarize all active NOTAMs for the requested aerodrome
+- Highlight critical operational impacts`,
+    quickPrompts:['Research active NOTAMs MROC','Decode this NOTAM: [paste]','NOTAMs affecting ILS approaches','TFR active Central America','NOTAM briefing package — template']
+  },
+  {
+    id:'flightplan', icon:'🗺️', name:'Flight Plan', sub:'Nav & ATC',
+    tag:'FPL OPS', title:'Flight Plan & Navigation Operations',
+    tools:['WEB_SEARCH','ROUTE_CALC','NOTAM_PARSE'],
+    caps:['web','calc','parse'],
+    systemPrompt:`You are AeroAgent FPL v2 — an expert flight planning and ATC procedures specialist for MROC and Latin American airspace.
+
+CORE EXPERTISE:
+- ICAO FPL format: all fields (7,8,9,10,13,15,16,18,19) — can compose and critique complete FPLs
+- Equipment codes: COM/NAV/SSR suffixes (ZFGRY... etc.), PBN/ codes (A1,B1,C1,D1,L1,O1,S1,T1)
+- SELCAL: format, assignment, check procedures
+- Routes: COCR1A/B/C, MARIN1A, SAALI1A — standard MROC SIDs; GUMAR, ARTUR, ROSAL — STARs
+- Costa Rica FIR (MROC): sector structure, CTA/TMA, UIR boundary
+- Fuel planning: trip/alternate/final reserve/contingency (ICAO Annex 2 + OPS specs)
+- Alternates: MROC alternates (MRLB/Liberia, MRLM/La Managua, MRSJ/Tobías Bolaños)
+- ETOPS: 120/180/240 min rule, adequate airport requirements
+- Weather minima: IFR alternate requirements by aircraft category
+- ATC phraseology: ICAO Doc 4444 — clearances, readbacks, non-standard situations
+- CPDLC/ADS-C: datalink procedures in COCR FIR
+
+USE web_search FOR:
+- Current AIP Costa Rica amendments
+- AIRAC cycle information
+- Real-time route availability (Eurocontrol IFPS, FAA TFM)
+- Airport charts (Chartfox, AirNav)`,
+    quickPrompts:['Compose ICAO FPL MROC→MIAM','Decode equipment suffix /L','MROC SID/STAR current','Fuel policy — ICAO vs operator','CPDLC procedures COCR FIR']
+  },
+  {
+    id:'cargo', icon:'📦', name:'Cargo', sub:'Freight & DGR',
+    tag:'CARGO OPS', title:'Cargo & Dangerous Goods Operations',
+    tools:['WEB_SEARCH','DGR_LOOKUP','REG_LOOKUP'],
+    caps:['web','data','parse'],
+    systemPrompt:`You are AeroAgent CARGO v2 — an IATA DGR Master expert and air cargo specialist.
+
+CORE EXPERTISE (IATA DGR 65th Edition + ICAO Doc 9284):
+- All 9 DG classes with subdivisions and compatibility groups
+- Packing instructions: can cite PI by UN number (e.g., "UN3480 → PI 965 Section II")
+- Quantity limits: passenger vs cargo-only vs freighter restrictions
+- Labeling: hazard, handling, orientation, class labels — sizes and placement
+- Shipper's Declaration: completion, errors that constitute non-compliance
+- Special provisions (A codes, special exceptions)
+- Segregation table: incompatible DG combinations, separation distances
+- Temperature-controlled cargo: GDP guidelines, IATA CEIV Pharma, cool chain validation
+- Live animals: IATA LAR — container types, ventilation, feeding, documentation
+- CITES: Appendix I/II/III, CITES permits, inspection at MROC
+- AWB completion: MAWB vs HAWB, charges, routing
+- ULD: PMC/PGA/AKE/LD3 specs, tare weights, max gross, damage reporting
+- Costa Rica: SENASA (animal health), SENASA phytosanitary, COMEX for restricted items
+- Export controls: EAR (US), ITAR basics — dual-use goods
+
+WHEN ASKED ABOUT A SPECIFIC UN NUMBER:
+1. Full proper shipping name
+2. Class/Division + subsidiary risks
+3. Packing group
+4. Applicable packing instruction(s)
+5. Quantity limits (CAO vs PAX)
+6. Current special provisions
+7. Any recent regulatory changes (search if uncertain)`,
+    quickPrompts:['UN3480 lithium batteries — rules','Dry ice shipment requirements','Live animals IATA checklist','Complete Shipper\'s Declaration','DGR class segregation table']
+  },
+  {
+    id:'schedule', icon:'📅', name:'Scheduling', sub:'Ops & Crew',
+    tag:'OPS SCHED', title:'Operations Scheduling & IROP',
+    tools:['WEB_SEARCH','FTL_CALC','REG_LOOKUP'],
+    caps:['calc','web','data'],
+    systemPrompt:`You are AeroAgent SCHED v2 — an expert airline operations scheduler specializing in IROP recovery, FTL compliance, and Latin American ops.
+
+CORE EXPERTISE:
+- FTL (Flight Time Limitations): EASA ORO.FTL full compliance, FAA Part 117, OACI Anexo 6
+- Rest requirements: minimum rest, extended recovery, split duty
+- Crew pairing: duty period construction, augmented crews, DH positioning
+- IROP (Irregular Operations): delay absorption, cancellation cascade, crew substitution
+- Slot management: Level 3 airports (MIA, LAX, LHR), historic slot rules, IATA SCR compliance
+- Aircraft rotation: string planning, maintenance windows, spare aircraft logic
+- CTOT/ATFM: Eurocontrol flow measures, slot compliance window (−5/+10)
+- Delay codes: IATA AHM 730 standard codes — can classify and advise cost implications
+- Costa Rica specifics: DGAC Costa Rica crew rest rules, APU limits in SJO apron
+- Schedule filing: SSIM Chapter 5 format, OAG submission, GDS loading
+
+WHEN ASKED TO CALCULATE FTL:
+- Request: block hours, sector count, report time, rest facility type
+- Calculate: DP limit, extension eligibility, minimum rest required, cumulative limits
+- Flag: any approaching limits with specific regulatory citation
+
+USE web_search FOR:
+- Latest EASA Opinion/NPA on FTL amendments
+- SLOT availability at specific airports
+- ATC advisory notices (EUROCONTROL/FAA ARTCC)`,
+    quickPrompts:['Calculate FTL — give me params','IROP recovery decision tree','IATA delay code classifier','Slot compliance rules Level 3','Crew rest — EASA vs FAA compare']
+  },
+  {
+    id:'wb', icon:'⚖️', name:'W&B', sub:'Weight & Balance',
+    tag:'W&B OPS', title:'Weight & Balance Calculator',
+    tools:['WB_CALC','REG_LOOKUP','WEB_SEARCH'],
+    caps:['calc','parse'],
+    systemPrompt:`You are AeroAgent W&B v2 — an expert weight and balance analyst for commercial aviation.
+
+CORE EXPERTISE:
+- Fundamental W&B: ZFW/TOW/LW calculations, MAC%, index system
+- Aircraft-specific: B737-800/MAX8, A320/A321, E190, ATR72-600, B777-300ER
+- Load sheet: understanding LIDO/Inform/LoadFox output, editing procedures
+- Trim sheet: horizontal stabilizer setting from index
+- Loading restrictions: floor load limits, zone restrictions, bulk vs ULD
+- Special loads: OHC (Overhead), COMAT, dangerous goods position restrictions
+- Passengers: standard weights (IATA Resolution 788 — males 88kg, females 70kg, child 35kg), survey weights
+- Bags: checked 15kg, carry-on 6kg (IATA standard averages)
+- Fuel: specific gravity JETA1 = 0.800 kg/L (typical), density variance with temperature
+- Costa Rica: DGAC std weights if different from IATA norms
+
+WHEN THE USER PROVIDES FLIGHT DATA:
+Walk through calculation systematically:
+1. OEW + crew + catering = DOM
+2. + cargo/bags + pax = ZFW (check vs MZFW)
+3. + trip fuel = TOW (check vs MTOW)
+4. TOW − trip fuel = LW (check vs MLW)
+5. CG: calculate arm × weight, sum moments, divide, convert to %MAC
+6. Report: all weights, limiting factors, trim setting`,
+    quickPrompts:['B737-800 load sheet walkthrough','A320 MAC% calculation','Explain index vs MAC','Standard passenger weights IATA','Fuel density correction for temp']
+  }
+];
+
+/* ==========================================================
+   CAPABILITIES MAP
+   ========================================================== */
+const ALL_CAPS = [
+  {id:'WEB_SEARCH',  label:'WEB SEARCH',    cls:'web',   desc:'Live internet research'},
+  {id:'METAR_PARSE', label:'METAR/TAF',      cls:'parse', desc:'Weather decode'},
+  {id:'NOTAM_PARSE', label:'NOTAM DECODE',   cls:'parse', desc:'Parse notices'},
+  {id:'DGR_LOOKUP',  label:'DGR LOOKUP',     cls:'data',  desc:'Dangerous goods'},
+  {id:'REG_LOOKUP',  label:'REG LOOKUP',     cls:'data',  desc:'Regulatory cite'},
+  {id:'WB_CALC',     label:'W&B CALC',       cls:'calc',  desc:'Weight & balance'},
+  {id:'FTL_CALC',    label:'FTL CALC',       cls:'calc',  desc:'Crew duty limits'},
+  {id:'ROUTE_CALC',  label:'ROUTE PLAN',     cls:'calc',  desc:'Flight plan'},
+  {id:'WEATHER_FETCH',label:'WX FETCH',      cls:'web',   desc:'Live weather'},
+  {id:'INCIDENT_LOG', label:'INCIDENT LOG',  cls:'data',  desc:'SMS reporting'}
+];
+
+/* ==========================================================
+   STATE
+   ========================================================== */
+let activeMod  = null;
+let history    = [];
+let busy       = false;
+
+function getKey(){ return document.getElementById('apiKeyIn').value.trim(); }
+
+/* ==========================================================
+   INIT
+   ========================================================== */
+function init(){
+  // Render module buttons
+  const grid = document.getElementById('modGrid');
+  MODS.forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'mod-btn';
+    b.id = 'mb-'+m.id;
+    b.onclick = () => selectMod(m.id);
+    b.innerHTML = `<span class="mod-icon">${m.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div class="mod-name">${m.name}</div>
+        <div class="mod-sub">${m.sub}</div>
+      </div>`;
+    grid.appendChild(b);
+  });
+
+  // Key input
+  const ki = document.getElementById('apiKeyIn');
+  ki.addEventListener('input', updateKeyStatus);
+
+  // Clocks
+  tick(); setInterval(tick, 1000);
+
+  // Input
+  const inp = document.getElementById('chatIn');
+  inp.addEventListener('input', () => {
+    inp.style.height = 'auto';
+    inp.style.height = Math.min(inp.scrollHeight, 110)+'px';
+  });
+  inp.addEventListener('keydown', e => {
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+
+  // Fake METAR
+  loadFakeMETAR();
+}
+
+function tick(){
+  const n = new Date();
+  document.getElementById('utcClock').textContent = n.toUTCString().slice(17,25);
+  document.getElementById('lclClock').textContent = n.toLocaleTimeString('en-US',{hour12:false});
+  document.getElementById('ctxCount').textContent = history.length + ' msgs';
+}
+
+function loadFakeMETAR(){
+  // Realistic MROC METAR
+  const metar = 'MROC 301200Z 08008KT 9999 FEW020 SCT100 26/22 A2992 NOSIG';
+  document.getElementById('metarBox').textContent = metar;
+
+  // Parse basic values for widgets
+  document.getElementById('windWidget').textContent = '080/08KT';
+  document.getElementById('qnhWidget').textContent  = '1013 hPa';
+}
+
+function updateKeyStatus(){
+  const k = getKey();
+  const dot = document.getElementById('ksDot');
+  const txt = document.getElementById('ksTxt');
+  const inp = document.getElementById('apiKeyIn');
+  if(!k){
+    dot.style.background='var(--text3)';txt.style.color='var(--text3)';
+    txt.textContent='NO KEY';inp.className='api-input';
+  } else if(k.startsWith('sk-')){
+    dot.style.background='var(--green)';dot.style.boxShadow='0 0 8px var(--green)';
+    txt.style.color='var(--green)';txt.textContent='KEY OK ✓';
+    inp.className='api-input ok';
+  } else {
+    dot.style.background='var(--red)';dot.style.boxShadow='0 0 8px var(--red)';
+    txt.style.color='var(--red)';txt.textContent='INVALID FORMAT';
+    inp.className='api-input bad';
+  }
+}
+
+/* ==========================================================
+   MODULE SELECT
+   ========================================================== */
+function selectMod(id){
+  const mod = MODS.find(m=>m.id===id);
+  if(!mod) return;
+
+  document.querySelectorAll('.mod-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mb-'+id).classList.add('active');
+
+  activeMod = mod;
+  history   = [];
+
+  document.getElementById('modTag').textContent   = mod.tag;
+  document.getElementById('chatTitle').textContent = mod.title;
+
+  // Tool badges
+  const tb = document.getElementById('toolBadges');
+  tb.innerHTML = '';
+  mod.tools.forEach(t => {
+    const cap = ALL_CAPS.find(c=>c.id===t);
+    if(!cap) return;
+    const span = document.createElement('span');
+    span.className = 'tool-badge';
+    span.textContent = cap.label;
+    tb.appendChild(span);
+  });
+
+  // Cap grid in sidebar
+  const cg = document.getElementById('capGrid');
+  cg.innerHTML = '';
+  mod.caps.forEach(c => {
+    const tag = document.createElement('span');
+    tag.className = 'cap-tag '+c;
+    const cap = ALL_CAPS.find(x=>x.cls===c);
+    tag.textContent = c.toUpperCase();
+    cg.appendChild(tag);
+  });
+
+  // Clear messages
+  document.getElementById('chatMsgs').innerHTML = '';
+
+  const capLines = mod.tools.map(t => {
+    const cap = ALL_CAPS.find(c => c.id === t);
+    return cap ? '• **' + cap.label + '** — ' + cap.desc : '';
+  }).filter(Boolean).join('\n');
+
+  addAI(
+    '**' + mod.icon + ' ' + mod.name + ' — ACTIVATED**\n\n' +
+    'I am AeroAgent v2 operating in **' + mod.title + '** mode with the following live capabilities:\n\n' +
+    capLines + '\n\n' +
+    'I can research live data, decode documents, perform calculations, and cite specific regulations. ' +
+    'Station: **MROC / SJO**, UTC: **' + new Date().toUTCString().slice(17,25) + '**\n\n' +
+    'How can I assist operations?'
+  );
+
+  // Quick prompts
+  const qr = document.getElementById('quickRow');
+  qr.style.display = 'flex';
+  qr.innerHTML = '';
+  mod.quickPrompts.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'qbtn'; b.textContent = p;
+    b.onclick = () => { document.getElementById('chatIn').value = p; send(); };
+    qr.appendChild(b);
+  });
+}
+
+/* ==========================================================
+   MESSAGE RENDERING
+   ========================================================== */
+function addAI(text, toolCalls){
+  const msgs = document.getElementById('chatMsgs');
+  const div  = document.createElement('div');
+  div.className = 'msg ai';
+  const t    = new Date().toLocaleTimeString('en-US',{hour12:false});
+
+  let toolHtml = '';
+  if(toolCalls && toolCalls.length){
+    toolHtml = toolCalls.map(tc => `
+      <div class="tool-call">
+        <div class="tc-icon">🔧</div>
+        <div class="tc-body">
+          <div class="tc-name">${tc.name}</div>
+          <div class="tc-detail">${tc.input||''}</div>
+          ${tc.result ? `<div class="tc-result">${escHtml(tc.result)}</div>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  div.innerHTML = `
+    <div class="av ai">AI</div>
+    <div style="min-width:0;flex:1">
+      ${toolHtml}
+      <div class="bubble">${fmt(text)}</div>
+      <div class="msg-meta">AEROAGENT v2 · ${t} UTC</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUser(text){
+  const msgs = document.getElementById('chatMsgs');
+  const div  = document.createElement('div');
+  div.className = 'msg user';
+  const t = new Date().toLocaleTimeString('en-US',{hour12:false});
+  div.innerHTML = `
+    <div class="av usr">OPS</div>
+    <div>
+      <div class="bubble">${fmt(text)}</div>
+      <div class="msg-meta">${t} UTC · OPERATOR</div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping(){
+  const msgs = document.getElementById('chatMsgs');
+  const div  = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing';
+  div.innerHTML = `
+    <div class="av ai">AI</div>
+    <div><div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping(){
+  const el = document.getElementById('typing');
+  if(el) el.remove();
+}
+
+/* basic markdown → html */
+function fmt(t){
+  return t
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```([\s\S]*?)```/g,'<pre>$1</pre>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/^#{3} (.+)$/gm,'<strong style="font-size:.9rem;color:var(--accent);display:block;margin:8px 0 4px">$1</strong>')
+    .replace(/^#{2} (.+)$/gm,'<strong style="font-size:.95rem;color:var(--accent);display:block;margin:10px 0 4px">$1</strong>')
+    .replace(/^# (.+)$/gm,'<strong style="font-size:1rem;color:var(--accent);display:block;margin:10px 0 6px">$1</strong>')
+    .replace(/^---$/gm,'<hr>')
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    .replace(/^[•\-] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/<\/ul>\s*<ul>/g,'')
+    .replace(/\n/g,'<br>');
+}
+
+function escHtml(t){
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ==========================================================
+   SEND → ANTHROPIC API WITH WEB SEARCH TOOL
+   ========================================================== */
+async function send(){
+  if(busy) return;
+  const inp  = document.getElementById('chatIn');
+  const text = inp.value.trim();
+  if(!text) return;
+
+  if(!activeMod){
+    addAI('**No module selected.** Choose an operations module from the sidebar first.');
+    return;
+  }
+
+  const key = getKey();
+  if(!key){
+    addAI('**API key required.** Enter your Anthropic API key in the sidebar under *API Configuration*.');
+    return;
+  }
+  if(!key.startsWith('sk-')){
+    addAI('**Invalid key format.** Anthropic keys start with `sk-ant-` — check the sidebar.');
+    return;
+  }
+
+  inp.value = ''; inp.style.height = 'auto';
+  busy = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  addUser(text);
+  history.push({role:'user', content: text});
+  addTyping();
+
+  /* ── Build tool list based on active module ── */
+  const toolList = [];
+
+  // Always include web_search if module has WEB_SEARCH capability
+  if(activeMod.tools.includes('WEB_SEARCH') || activeMod.tools.includes('WEATHER_FETCH')){
+    toolList.push({
+      type: 'web_search_20250305',
+      name: 'web_search'
+    });
+  }
+
+  try {
+    const body = {
+      model:      'claude-sonnet-4-20250514',
+      max_tokens: 2048,
+      system:     buildSystemPrompt(),
+      messages:   history
+    };
+
+    if(toolList.length > 0){
+      body.tools = toolList;
+    }
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key':    key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await resp.json();
+    removeTyping();
+
+    if(!resp.ok){
+      const errType = data.error?.type || 'api_error';
+      const errMsg  = data.error?.message || 'Unknown error';
+      const hint = resp.status === 401
+        ? '\n\n**Fix:** Check your API key in the sidebar — it may be invalid or expired.'
+        : resp.status === 429
+        ? '\n\n**Fix:** Rate limit hit — wait a moment and retry.'
+        : '';
+      addAI(`**API Error ${resp.status} (${errType}):** ${errMsg}${hint}`);
+    } else {
+      /* ── Process response — may contain text, tool_use, tool_result ── */
+      const toolCallsDisplay = [];
+      let   replyText        = '';
+
+      // If stop_reason is tool_use, we need to handle the tool loop
+      if(data.stop_reason === 'tool_use'){
+        // Collect tool uses
+        const toolUses = data.content.filter(b => b.type === 'tool_use');
+        const textBlocks = data.content.filter(b => b.type === 'text');
+        if(textBlocks.length) replyText = textBlocks.map(b=>b.text).join('');
+
+        // For each tool use, show it in UI and send results back
+        const toolResults = [];
+        for(const tu of toolUses){
+          const resultText = `[Web search executed: "${tu.input?.query || JSON.stringify(tu.input)}"\nResults processed by model]`;
+          toolCallsDisplay.push({
+            name:   tu.name,
+            input:  tu.input?.query || JSON.stringify(tu.input),
+            result: resultText
+          });
+          toolResults.push({
+            type:       'tool_result',
+            tool_use_id: tu.id,
+            content:    resultText
+          });
+        }
+
+        // Add assistant message to history (with tool_use blocks)
+        history.push({role:'assistant', content: data.content});
+
+        // Add tool results
+        history.push({role:'user', content: toolResults});
+
+        // Make follow-up call to get final answer
+        addTyping();
+        const resp2 = await fetch('https://api.anthropic.com/v1/messages',{
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'x-api-key': key,
+            'anthropic-version':'2023-06-01',
+            'anthropic-dangerous-direct-browser-access':'true'
+          },
+          body: JSON.stringify({
+            model:      'claude-sonnet-4-20250514',
+            max_tokens: 2048,
+            system:     buildSystemPrompt(),
+            messages:   history,
+            tools:      toolList
+          })
+        });
+
+        const data2 = await resp2.json();
+        removeTyping();
+
+        if(data2.content){
+          const txt = data2.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+          replyText = txt || replyText;
+          history.push({role:'assistant', content: txt});
+        }
+
+      } else {
+        // Normal text response
+        replyText = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+        if(!replyText && data.content.length){
+          replyText = data.content.map(b=>b.text||'').join('');
+        }
+        history.push({role:'assistant', content: replyText});
+      }
+
+      addAI(replyText || '(No response text)', toolCallsDisplay);
+    }
+
+  } catch(err){
+    removeTyping();
+    addAI(
+      `**Network Error:** Could not reach Anthropic API.\n\n` +
+      `**Cause:** ${err.message}\n\n` +
+      `**Try:** Open via a local server (not file://) or use CodePen/JSFiddle to avoid CORS restrictions.`
+    );
+  }
+
+  busy = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('chatIn').focus();
+}
+
+/* ==========================================================
+   SYSTEM PROMPT BUILDER
+   Injects current time, station, and tool instructions
+   ========================================================== */
+function buildSystemPrompt(){
+  const now = new Date();
+  const utc = now.toUTCString();
+  const base = activeMod.systemPrompt;
+
+  return `${base}
+
+---
+CURRENT OPERATIONAL CONTEXT:
+- Station: MROC / SJO (Juan Santamaría International Airport, Costa Rica)
+- UTC Date/Time: ${utc}
+- Active module: ${activeMod.name} — ${activeMod.title}
+- Agent version: AeroAgent v2.0 Expert Ops Edition
+
+TOOL USAGE INSTRUCTIONS:
+${(activeMod.tools.includes('WEB_SEARCH') || activeMod.tools.includes('WEATHER_FETCH'))
+  ? 'You have access to the web_search tool. Use it proactively when:\n' +
+    '- The user asks for current/live NOTAMs, METARs, TAFs, SIGMETs\n' +
+    '- The user needs current regulatory text or recent amendments\n' +
+    '- The user asks about a specific flight, airport status, or ATC advisory\n' +
+    '- You need to verify a fact that may have changed since your training\n\n' +
+    'When using web_search:\n' +
+    '- For METARs: search "site:aviationweather.gov METAR [ICAO]" or "METAR [ICAO] current"\n' +
+    '- For NOTAMs: search "NOTAM [ICAO] active" or "FAA NOTAM search [airport]"\n' +
+    '- For regulations: search "ICAO Annex [N] amendment [year]" or "IATA DGR [edition] [topic]"\n' +
+    '- For airport info: search "[ICAO] AIP [country]" or "[airport] charts current"\n' +
+    '- Always cite your sources in the response'
+  : 'No live web search available for this module. Answer from expert knowledge.'
+}
+
+RESPONSE STANDARDS:
+- Be precise: use correct ICAO/IATA terminology, correct unit systems
+- Be actionable: give operators what they need to make a decision RIGHT NOW
+- Cite sources: regulations by document/section, data by source/time
+- Flag critical safety items with ⚠️ WARNING or 🔴 CRITICAL prefixes
+- Use GREEN/AMBER/RED status nomenclature for operational go/no-go items`;
+}
+
+init();
+</script>
+</body>
+</html>
