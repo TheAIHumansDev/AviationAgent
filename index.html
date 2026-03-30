@@ -5,15 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AeroAgent — Aviation Operations Intelligence</title>
 <style>
-  /* ============================================================
-     AEROAGENT — Full Standalone
-     HOW TO USE:
-       1. Set API_KEY in the <script> below (line ~460)
-       2. Open this file in Chrome / Firefox, OR
-          paste into CodePen HTML panel, OR
-          use display(HTML(...)) in Google Colab
-     ============================================================ */
-
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@200;300;400;600&display=swap');
 
   :root {
@@ -61,7 +52,6 @@
     min-height:100vh;
   }
 
-  /* ── Header ── */
   header {
     display:flex; align-items:center; gap:20px;
     padding:16px 24px;
@@ -104,13 +94,11 @@
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.8)} }
   .status-text { font-family:'Share Tech Mono',monospace; font-size:.7rem; color:var(--green); letter-spacing:.1em; }
 
-  /* ── Layout ── */
   .main-layout {
     display:grid; grid-template-columns:280px 1fr; gap:20px;
     flex:1; min-height:0;
   }
 
-  /* ── Sidebar ── */
   .sidebar { display:flex; flex-direction:column; gap:16px; }
   .section-label {
     font-family:'Share Tech Mono',monospace; font-size:.6rem;
@@ -149,8 +137,8 @@
   .info-val { font-family:'Share Tech Mono',monospace; font-size:.7rem; color:var(--accent); }
   .info-val.green  { color:var(--green); }
   .info-val.yellow { color:var(--yellow); }
+  .info-val.red    { color:var(--red); }
 
-  /* ── Chat area ── */
   .chat-area {
     display:flex; flex-direction:column;
     background:var(--panel); border:1px solid var(--border); border-radius:4px;
@@ -210,7 +198,6 @@
   .typing-indicator span:nth-child(3){animation-delay:.4s}
   @keyframes bounce { 0%,80%,100%{transform:translateY(0);opacity:.5} 40%{transform:translateY(-6px);opacity:1} }
 
-  /* ── Quick prompts ── */
   .quick-prompts {
     padding:12px 20px; border-top:1px solid var(--border);
     display:flex; gap:8px; flex-wrap:wrap; background:rgba(5,10,20,.3);
@@ -223,7 +210,6 @@
   }
   .quick-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,.05); }
 
-  /* ── Input ── */
   .input-area {
     padding:16px 20px; border-top:1px solid var(--border);
     display:flex; gap:12px; align-items:flex-end;
@@ -248,7 +234,6 @@
   .send-btn:hover { background:rgba(0,212,255,.2); box-shadow:0 0 20px rgba(0,212,255,.3); }
   .send-btn:disabled { opacity:.4; cursor:not-allowed; }
 
-  /* ── Welcome ── */
   .welcome-screen {
     flex:1; display:flex; flex-direction:column;
     align-items:center; justify-content:center;
@@ -267,6 +252,24 @@
   }
   .use-case-tag:hover { border-color:var(--accent); color:var(--accent); background:rgba(0,212,255,.08); }
 
+  /* API key input styling */
+  .api-key-input {
+    background:var(--bg2); border:1px solid var(--border); border-radius:3px;
+    padding:8px 10px; color:var(--text); font-family:'Share Tech Mono',monospace;
+    font-size:.65rem; outline:none; width:100%;
+    transition: border-color .2s;
+  }
+  .api-key-input:focus { border-color: var(--accent2); }
+  .api-key-input.valid   { border-color: rgba(0,255,136,.5); }
+  .api-key-input.invalid { border-color: rgba(255,71,87,.5); }
+
+  .key-status {
+    display:flex; align-items:center; gap:6px;
+    font-family:'Share Tech Mono',monospace; font-size:.6rem;
+    margin-top:6px;
+  }
+  .key-status-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
   @media(max-width:800px){
     .main-layout { grid-template-columns:1fr; }
     .sidebar { display:none; }
@@ -278,7 +281,6 @@
 
 <div class="container">
 
-  <!-- ── HEADER ── -->
   <header>
     <div class="logo">
       <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -299,10 +301,8 @@
     </div>
   </header>
 
-  <!-- ── MAIN LAYOUT ── -->
   <div class="main-layout">
 
-    <!-- ── SIDEBAR ── -->
     <div class="sidebar">
       <div>
         <div class="section-label">Operations Modules</div>
@@ -329,27 +329,26 @@
         </div>
       </div>
 
-      <!-- API KEY INPUT -->
+      <!-- API KEY PANEL -->
       <div class="info-panel">
         <div class="section-label">API Configuration</div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
           <input
             type="password"
             id="apiKeyInput"
+            class="api-key-input"
             placeholder="sk-ant-api03-..."
-            style="
-              background:var(--bg2); border:1px solid var(--border); border-radius:3px;
-              padding:8px 10px; color:var(--text); font-family:'Share Tech Mono',monospace;
-              font-size:.65rem; outline:none; width:100%;
-            "
-            oninput="API_KEY = this.value.trim()"
+            autocomplete="off"
+            spellcheck="false"
           />
-          <span style="font-size:.6rem;color:var(--text3);">Enter your Anthropic API key above, or set it in the script.</span>
+          <div class="key-status" id="keyStatus">
+            <div class="key-status-dot" id="keyDot" style="background:var(--text3)"></div>
+            <span id="keyStatusText" style="color:var(--text3)">NO KEY LOADED</span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ── CHAT AREA ── -->
     <div class="chat-area" id="chatArea">
       <div class="chat-header">
         <span class="chat-module-tag" id="moduleTag">SELECT MODULE</span>
@@ -390,30 +389,17 @@
       </div>
     </div>
 
-  </div><!-- /main-layout -->
-</div><!-- /container -->
+  </div>
+</div>
 
 <script>
-  /* ===========================================================
-     CONFIGURATION
-     Set your Anthropic API key here, OR type it in the sidebar
-     input field at runtime.
-     =========================================================== */
-  let API_KEY = ""; // <-- PASTE YOUR KEY HERE e.g. "sk-ant-api03-xxxx"
-
-  /* ===========================================================
-     MODULE DEFINITIONS
-     Each module has a specialized system prompt that makes the
-     Claude model respond as a domain expert for that area.
-     =========================================================== */
+  /* ============================================================
+     MODULES
+     ============================================================ */
   const MODULES = [
     {
-      id: "avsec",
-      icon: "🛡️",
-      name: "AVSEC",
-      desc: "Aviation Security",
-      tag: "AVSEC OPS",
-      title: "Aviation Security Intelligence",
+      id: "avsec", icon: "🛡️", name: "AVSEC", desc: "Aviation Security",
+      tag: "AVSEC OPS", title: "Aviation Security Intelligence",
       systemPrompt: `You are AeroAgent AVSEC — an aviation security (AVSEC) specialist AI for ground operations. You are an expert in:
 - ICAO Annex 17 security standards and procedures
 - Threat assessment and suspicious activity recognition
@@ -428,12 +414,8 @@ Always prioritize safety. Provide actionable, clear guidance. Use aviation indus
       quickPrompts: ["Suspicious item checklist", "Access control breach procedure", "Threat level protocols", "Cargo security requirements"]
     },
     {
-      id: "ramp",
-      icon: "🛫",
-      name: "Ramp Ops",
-      desc: "Ground Handling",
-      tag: "RAMP CTRL",
-      title: "Ramp Operations Control",
+      id: "ramp", icon: "🛫", name: "Ramp Ops", desc: "Ground Handling",
+      tag: "RAMP CTRL", title: "Ramp Operations Control",
       systemPrompt: `You are AeroAgent RAMP — an expert in airline ground handling and ramp operations. Your knowledge covers:
 - Aircraft marshalling, pushback, and towing procedures
 - FOD (Foreign Object Debris) prevention and control
@@ -449,12 +431,8 @@ Provide safety-first guidance. Use standard IATA ground handling codes and termi
       quickPrompts: ["Turnaround checklist", "FOD procedure", "Weight & balance basics", "Ramp safety rules"]
     },
     {
-      id: "wheelchair",
-      icon: "♿",
-      name: "Mobility Assist",
-      desc: "Wheelchair & PRM",
-      tag: "PRM SVC",
-      title: "Passenger Reduced Mobility Services",
+      id: "wheelchair", icon: "♿", name: "Mobility Assist", desc: "Wheelchair & PRM",
+      tag: "PRM SVC", title: "Passenger Reduced Mobility Services",
       systemPrompt: `You are AeroAgent PRM — a specialist in Persons with Reduced Mobility (PRM) and wheelchair assistance services in aviation. You are expert in:
 - EU Regulation 1107/2006 and equivalent global standards
 - IATA wheelchair service codes: WCHR, WCHS, WCHC, WCHP
@@ -471,12 +449,8 @@ Always respond with empathy and dignity-first language. Provide clear service pr
       quickPrompts: ["WCHR vs WCHC difference", "Ambulift checklist", "MEDIF requirements", "Pre-notification process"]
     },
     {
-      id: "schedule",
-      icon: "📅",
-      name: "Scheduling",
-      desc: "Flight & Crew Ops",
-      tag: "OPS SCHED",
-      title: "Operations Scheduling",
+      id: "schedule", icon: "📅", name: "Scheduling", desc: "Flight & Crew Ops",
+      tag: "OPS SCHED", title: "Operations Scheduling",
       systemPrompt: `You are AeroAgent SCHED — an expert in airline flight and crew scheduling. Your expertise includes:
 - Flight schedule optimization and slot management
 - Crew pairing and rostering principles
@@ -493,12 +467,8 @@ Provide structured scheduling advice. Be precise with times (always specify UTC 
       quickPrompts: ["IROP recovery steps", "FTL rest requirements", "Delay reporting codes", "Slot management tips"]
     },
     {
-      id: "flightplan",
-      icon: "🗺️",
-      name: "Flight Plan",
-      desc: "Nav & ATC",
-      tag: "FPL OPS",
-      title: "Flight Plan & Navigation Ops",
+      id: "flightplan", icon: "🗺️", name: "Flight Plan", desc: "Nav & ATC",
+      tag: "FPL OPS", title: "Flight Plan & Navigation Ops",
       systemPrompt: `You are AeroAgent FPL — a specialist in flight planning, navigation, and ATC procedures. Your knowledge spans:
 - ICAO flight plan format (Form 4444 / DOC 7030)
 - Flight plan fields: callsign, equipment codes, routes, alternates
@@ -515,12 +485,8 @@ Always use ICAO standard abbreviations. Be precise with units (ft, nm, kt, kg/lb
       quickPrompts: ["ICAO FPL format", "Alternate fuel requirements", "NOTAM interpretation", "RVSM requirements"]
     },
     {
-      id: "cargo",
-      icon: "📦",
-      name: "Cargo Ops",
-      desc: "Air Freight & DGR",
-      tag: "CARGO OPS",
-      title: "Cargo & Dangerous Goods Operations",
+      id: "cargo", icon: "📦", name: "Cargo Ops", desc: "Air Freight & DGR",
+      tag: "CARGO OPS", title: "Cargo & Dangerous Goods Operations",
       systemPrompt: `You are AeroAgent CARGO — an expert in air cargo operations and dangerous goods regulations. Your expertise includes:
 - IATA Dangerous Goods Regulations (DGR) — all 9 classes
 - UN numbers, proper shipping names, packing groups
@@ -539,16 +505,53 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
     }
   ];
 
-  /* ===========================================================
+  /* ============================================================
      STATE
-     =========================================================== */
-  let activeModule       = null;
+     ============================================================ */
+  let activeModule        = null;
   let conversationHistory = [];
-  let isThinking         = false;
+  let isThinking          = false;
 
-  /* ===========================================================
+  /* ============================================================
+     API KEY — single source of truth
+     The key is always read directly from the input field at
+     call time. No global variable to go stale.
+     ============================================================ */
+  function getApiKey() {
+    return document.getElementById("apiKeyInput").value.trim();
+  }
+
+  function updateKeyStatus() {
+    const key  = getApiKey();
+    const dot  = document.getElementById("keyDot");
+    const text = document.getElementById("keyStatusText");
+    const inp  = document.getElementById("apiKeyInput");
+
+    if (!key) {
+      dot.style.background  = "var(--text3)";
+      text.style.color      = "var(--text3)";
+      text.textContent      = "NO KEY LOADED";
+      inp.classList.remove("valid","invalid");
+    } else if (key.startsWith("sk-ant-") || key.startsWith("sk-")) {
+      dot.style.background  = "var(--green)";
+      dot.style.boxShadow   = "0 0 6px var(--green)";
+      text.style.color      = "var(--green)";
+      text.textContent      = "KEY LOADED ✓";
+      inp.classList.add("valid");
+      inp.classList.remove("invalid");
+    } else {
+      dot.style.background  = "var(--red)";
+      dot.style.boxShadow   = "0 0 6px var(--red)";
+      text.style.color      = "var(--red)";
+      text.textContent      = "INVALID FORMAT";
+      inp.classList.add("invalid");
+      inp.classList.remove("valid");
+    }
+  }
+
+  /* ============================================================
      INIT
-     =========================================================== */
+     ============================================================ */
   function init() {
     // Render module buttons
     const grid = document.getElementById("modulesGrid");
@@ -565,6 +568,11 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
         </div>`;
       grid.appendChild(btn);
     });
+
+    // API key field — live validation, no global
+    const keyInput = document.getElementById("apiKeyInput");
+    keyInput.addEventListener("input", updateKeyStatus);
+    keyInput.addEventListener("change", updateKeyStatus);
 
     // Clocks
     updateClocks();
@@ -587,14 +595,13 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
     document.getElementById("localTime").textContent = now.toLocaleTimeString("en-US", { hour12: false });
   }
 
-  /* ===========================================================
+  /* ============================================================
      MODULE SELECTION
-     =========================================================== */
+     ============================================================ */
   function selectModule(modId) {
     const mod = MODULES.find(m => m.id === modId);
     if (!mod) return;
 
-    // Highlight button
     document.querySelectorAll(".module-btn").forEach(b => b.classList.remove("active"));
     const btn = document.getElementById("mod-" + modId);
     if (btn) btn.classList.add("active");
@@ -602,15 +609,12 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
     activeModule = mod;
     conversationHistory = [];
 
-    // Update header tags
     document.getElementById("moduleTag").textContent  = mod.tag;
     document.getElementById("chatTitle").textContent  = mod.title;
 
-    // Clear chat and show greeting
     document.getElementById("chatMessages").innerHTML = "";
     addAgentMessage(`**${mod.icon} ${mod.name} MODULE ACTIVATED**\n\nI am AeroAgent specialized in ${mod.title}. I have deep knowledge of industry regulations, procedures, and best practices for this domain.\n\nHow can I assist your operations today?`);
 
-    // Quick prompts bar
     const qp = document.getElementById("quickPrompts");
     qp.style.display = "flex";
     qp.innerHTML = "";
@@ -626,9 +630,9 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
     });
   }
 
-  /* ===========================================================
+  /* ============================================================
      MESSAGE RENDERING
-     =========================================================== */
+     ============================================================ */
   function addAgentMessage(text) {
     const msgs = document.getElementById("chatMessages");
     const div  = document.createElement("div");
@@ -681,18 +685,17 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
   }
 
   function formatText(text) {
-    // Very light markdown: **bold**, `code`, bullet lists, newlines
     return text
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")  // escape HTML
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/`(.*?)`/g, "<code>$1</code>")
       .replace(/\n- /g, "\n• ")
       .replace(/\n/g, "<br>");
   }
 
-  /* ===========================================================
+  /* ============================================================
      SEND MESSAGE → ANTHROPIC API
-     =========================================================== */
+     ============================================================ */
   async function sendMessage() {
     if (isThinking) return;
 
@@ -701,13 +704,20 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
     if (!text) return;
 
     if (!activeModule) {
-      alert("Please select an operations module first (sidebar or quick-tiles).");
+      addAgentMessage("**No module selected.** Please choose an operations module from the sidebar first.");
       return;
     }
 
-    const key = API_KEY || document.getElementById("apiKeyInput").value.trim();
-    if (!key || !key.startsWith("sk-")) {
-      alert("Please enter your Anthropic API key in the sidebar field (bottom-left) or set it in the script.");
+    // Always read the key fresh from the DOM — no stale global
+    const key = getApiKey();
+
+    if (!key) {
+      addAgentMessage("**API key required.** Enter your Anthropic API key in the sidebar under *API Configuration*.");
+      return;
+    }
+
+    if (!key.startsWith("sk-")) {
+      addAgentMessage("**Invalid API key format.** The key should start with `sk-ant-` or `sk-`. Check the value entered in the sidebar.");
       return;
     }
 
@@ -740,26 +750,31 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
       const data = await response.json();
       removeTypingIndicator();
 
-      let reply = "";
-      if (data.content && data.content.length > 0) {
-        reply = data.content.map(b => b.text || "").join("");
-      } else if (data.error) {
-        reply = `**API Error ${data.error.type}:** ${data.error.message}`;
+      if (!response.ok) {
+        // Surface the exact API error — 401 = bad key, 429 = rate limit, etc.
+        const errType = data.error?.type || "api_error";
+        const errMsg  = data.error?.message || "Unknown error";
+        const hint = response.status === 401
+          ? "\n\n**Likely cause:** Key is invalid, expired, or was typed incorrectly. Double-check it in the sidebar."
+          : response.status === 429
+          ? "\n\n**Likely cause:** Rate limit reached. Wait a moment then try again."
+          : "";
+        addAgentMessage(`**API Error ${response.status} (${errType}):** ${errMsg}${hint}`);
+      } else if (data.content && data.content.length > 0) {
+        const reply = data.content.map(b => b.text || "").join("");
+        conversationHistory.push({ role: "assistant", content: reply });
+        addAgentMessage(reply);
       } else {
-        reply = "No response received. Check your API key and network connection.";
+        addAgentMessage("Empty response received from the API.");
       }
-
-      conversationHistory.push({ role: "assistant", content: reply });
-      addAgentMessage(reply);
 
     } catch (err) {
       removeTypingIndicator();
       addAgentMessage(
-        `**Connection Error:** Unable to reach the Anthropic API.\n\n` +
+        `**Network Error:** Could not reach the Anthropic API.\n\n` +
         `**Possible causes:**\n` +
-        `- Missing or invalid API key\n` +
-        `- CORS restriction (use a local server or CodePen)\n` +
-        `- Network issue\n\n` +
+        `- CORS restriction — open this file via a local server or use a tool like CodePen / JSFiddle\n` +
+        `- No internet connection\n\n` +
         "`" + err.message + "`"
       );
     }
@@ -769,9 +784,6 @@ Always cite specific IATA DGR packing instructions when relevant. Safety is para
     document.getElementById("chatInput").focus();
   }
 
-  /* ===========================================================
-     BOOTSTRAP
-     =========================================================== */
   init();
 </script>
 </body>
